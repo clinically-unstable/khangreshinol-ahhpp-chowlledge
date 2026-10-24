@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import RefractionSim, { MAX_IOR } from './RefractionSim.jsx';
 import './styles.css';
 
 const Arrow = () => <span className="arrow" aria-hidden="true">↗</span>;
@@ -20,7 +21,11 @@ function LensVisual({ mode }) {
 }
 
 function App() {
-  const [mode, setMode] = useState('Far');
+  const mode = 'Far';
+  const [ior, setIor] = useState(1.5);
+  const [dist, setDist] = useState(0.9);
+  const [retune, setRetune] = useState(false);
+  const clampIor = v => Math.min(MAX_IOR, Math.max(1, v));
   return (
     <main>
       <div className="aurora aurora-one" /><div className="aurora aurora-two" /><div className="grain" />
@@ -41,24 +46,22 @@ function App() {
         <article><span>03</span><h3>another title</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p></article>
       </section>
       <section className="workspace shell" id="technology">
-        <article className="blender-card glass-panel">
-          <div><span /> 3-D MODEL</div><h2>Explore the lens build.</h2>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus.</p>
-          <div className="model-stage"><div className="model-grid" /><div className="model-orbit"><div className="model-lens" /></div><span>BLENDER PREVIEW</span></div>
-          <button className="launch-button">Open 3D model <Arrow /></button>
-        </article>
         <article className="demo glass-panel">
           <div className="demo-copy">
-            <div className="eyebrow"><span /> 2D INTERACTIVE</div>
-            <h2>Change the<br />way you focus.</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-            <div className="mode-switch" role="group" aria-label="Vision mode">
-              {['Near', 'Far'].map(item => <button key={item} className={mode === item ? 'selected' : ''} onClick={() => setMode(item)}><span>{item === 'Near' ? '◎' : '◌'}</span>{item} vision</button>)}
+            <div className="eyebrow"><span /> simulation or some crap</div>
+            <h2>Lense<br />Simulation</h2>
+            <p>Edit the Index of Refraction and text distance to simulate lens behavior.</p>
+            <div className="sim-controls">
+              <div className="sim-row"><label htmlFor="ior">Index of refraction</label>
+                <input id="ior" type="range" min="1" max={MAX_IOR} step="0.01" value={ior} onChange={e => setIor(clampIor(+e.target.value))} />
+                <input type="number" min="1" max={MAX_IOR} step="0.01" value={ior} aria-label="IOR value" onChange={e => { const v = parseFloat(e.target.value); if (isFinite(v)) setIor(clampIor(v)); }} /></div>
+              <div className="sim-row"><label htmlFor="dist">Text distance</label>
+                <input id="dist" type="range" min="0.02" max="3" step="0.01" value={dist} onChange={e => setDist(+e.target.value)} />
+                <input type="number" min="0" max="10" step="0.01" value={dist} aria-label="Distance value" onChange={e => { const v = parseFloat(e.target.value); if (isFinite(v)) setDist(Math.max(0, v)); }} /></div>
             </div>
           </div>
           <div className="demo-visual">
-            <div className="preview-label"><span>Light response</span></div>
-            <LensVisual mode={mode} />
+            <RefractionSim n={ior} d={dist} retune={retune} />
           </div>
         </article>
       </section>
