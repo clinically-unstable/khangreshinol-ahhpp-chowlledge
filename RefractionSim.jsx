@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import textUrl from './assets/rendered_lorem_ipsum.png';
+import textUrl from '/src/rendered_lorem_ipsum.png';
 
 export const MAX_IOR = 2;
 // dont touch ts pls
