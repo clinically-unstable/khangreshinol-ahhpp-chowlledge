@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import RefractionSim, { MAX_IOR } from './RefractionSim.jsx';
-import RefractionSim, { MAX_IOR } from './RefractionSim.jsx';
 import './styles.css';
 
 
@@ -245,6 +244,22 @@ function VisionOutput({ mode, prescription, voltage }) {
 
 function App() {
   const [mode, setMode] = useState('Far');
+  const [prescription, setPrescription] = useState(-2);
+  const [voltage, setVoltage] = useState(50);
+  const [locked, setLocked] = useState(true);
+
+  // Separate material-refraction model; these controls do not alter the
+  // illustrative prescription/vision preview above.
+  const [ior, setIor] = useState(1.5);
+  const [distance, setDistance] = useState(0.9);
+  const [retune, setRetune] = useState(false);
+
+  const farPoint = 1 / Math.abs(prescription);
+  const conventionalLow = 200;
+  const conventionalHigh = 600;
+  const lcEstimate = 275;
+  const yearlyBattery = 7.5 / 4;
+
   return (
     <main>
       <div className="aurora aurora-one" />
@@ -303,30 +318,291 @@ function App() {
           </div>
         </div>
       </section>
-      <section className="stats shell">
-        <article><span>01</span><h3>title</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p></article>
-        <article><span>02</span><h3>other title</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p></article>
-        <article><span>03</span><h3>another title</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p></article>
-      </section>
-      <section className="workspace shell" id="technology">
-        <article className="blender-card glass-panel">
-          <div><span /> 3-D MODEL</div><h2>Explore the lens build.</h2>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus.</p>
-          <div className="model-stage"><div className="model-grid" /><div className="model-orbit"><div className="model-lens" /></div><span>BLENDER PREVIEW</span></div>
-          <button className="launch-button">Open 3D model <Arrow /></button>
+
+      <section className="stats shell" aria-label="Vision and eyewear context">
+        <article>
+          <span className="stat-index">01 / ACCESS</span>
+          <strong>~64%</strong>
+          <h3>of U.S. adults</h3>
+          <p>are reported to wear glasses. Estimates vary by study and definition.</p>
+          <a href={sources.glasses} target="_blank" rel="noreferrer">Read source <Arrow /></a>
         </article>
-        <article className="demo glass-panel">
-          <div className="demo-copy">
-            <div className="eyebrow"><span /> 2D INTERACTIVE</div>
-            <h2>Change the<br />way you focus.</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-            <div className="mode-switch" role="group" aria-label="Vision mode">
-              {['Near', 'Far'].map(item => <button key={item} className={mode === item ? 'selected' : ''} onClick={() => setMode(item)}><span>{item === 'Near' ? '◎' : '◌'}</span>{item} vision</button>)}
+        <article>
+          <span className="stat-index">02 / REPLACEMENT</span>
+          <strong>1–2 years</strong>
+          <h3>A common replacement interval</h3>
+          <p>Many factors such as change in prescription, wear, etc, affect timing.</p>
+          <a href={sources.replacement} target="_blank" rel="noreferrer">Read source <Arrow /></a>
+        </article>
+        <article>
+          <span className="stat-index">03 / COST</span>
+          <strong>$200–600</strong>
+          <h3>Illustrative glasses cost</h3>
+          <p>Prices vary with frames, lenses, coatings, insurance, and retailer.</p>
+          <a href={sources.price} target="_blank" rel="noreferrer">Read source <Arrow /></a>
+        </article>
+      </section>
+
+      <section className="section shell" id="science">
+        <div className="section-heading">
+          <span className="eyebrow"><span /> THE OPTICS</span>
+          <h2>Where the world<br />comes into focus.</h2>
+          <p>
+            Vision depends on light being focused onto the retina. Myopia,
+            or nearsightedness, usually occurs when the eye is too long
+            relative to its focusing power. Distant objects appear blurry.
+          </p>
+          <a className="text-link" href={sources.myopia} target="_blank" rel="noreferrer">
+            Explore myopia <Arrow />
+          </a>
+        </div>
+
+        <div className="science-panel glass-panel">
+          <div className="panel-heading">
+            <span>THE VISUAL SYSTEM</span>
+            <span>01 — 05</span>
+          </div>
+          <EyePath />
+          <a className="source-link" href={sources.eye} target="_blank" rel="noreferrer">
+            Source: National Eye Institute <Arrow />
+          </a>
+        </div>
+      </section>
+
+      <section className="simulator-section" id="simulator">
+        <div className="shell">
+          <div className="section-heading centered">
+            <span className="eyebrow"><span /> INTERACTIVE OPTICS LAB</span>
+            <h2>Change the power.<br /><em>Explore the focus.</em></h2>
+            <p>
+              Adjust a conceptual negative lens power and explore how an
+              electrically tunable lens might be controlled. Values are
+              illustrative; voltage does not map universally to diopters.
+            </p>
+          </div>
+
+          <div className="simulator glass-panel">
+            <div className="sim-controls">
+              <div className="panel-heading">
+                <span>01 / LENS CONTROLS</span>
+                <span className="live-indicator">INTERACTIVE</span>
+              </div>
+
+              <label className="field-label" htmlFor="mode">
+                Viewing scenario
+              </label>
+              <div className="mode-switch" role="group" aria-label="Viewing scenario">
+                {['Far', 'Near'].map((item) => (
+                  <button
+                    key={item}
+                    className={mode === item ? 'selected' : ''}
+                    onClick={() => setMode(item)}
+                    aria-pressed={mode === item}
+                  >
+                    {item === 'Near' ? '◎' : '◌'} {item} vision
+                  </button>
+                ))}
+              </div>
+
+              <div className="control-heading">
+                <label className="field-label" htmlFor="power">
+                  Illustrative lens power
+                </label>
+                <output htmlFor="power">{prescription.toFixed(2)} D</output>
+              </div>
+              <input
+                id="power"
+                type="range"
+                min="-6"
+                max="-0.5"
+                step="0.25"
+                value={prescription}
+                onChange={(event) => {
+                  setPrescription(Number(event.target.value));
+                  if (!locked) {
+                    setVoltage(
+                      Math.round(
+                        ((Math.abs(Number(event.target.value)) - 0.5) / 5.5) * 100
+                      )
+                    );
+                  }
+                }}
+              />
+              <div className="range-labels"><span>−6.00 D</span><span>−0.50 D</span></div>
+
+              <div className="control-heading">
+                <label className="field-label" htmlFor="voltage">
+                  Conceptual driver level
+                </label>
+                <output htmlFor="voltage">{voltage}%</output>
+              </div>
+              <input
+                id="voltage"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={voltage}
+                disabled={locked}
+                onChange={(event) => setVoltage(Number(event.target.value))}
+              />
+              <div className="range-labels"><span>Low</span><span>High</span></div>
+
+              <button
+                className={`lock-button ${locked ? 'is-locked' : ''}`}
+                onClick={() => setLocked(!locked)}
+                aria-pressed={locked}
+              >
+                <span>{locked ? '▣' : '□'}</span>
+                {locked ? 'Control locked — unlock to adjust driver' : 'Control unlocked'}
+              </button>
+
+              <div className="measurement">
+                <span className="muted-label">IDEALIZED FAR POINT</span>
+                <strong>{farPoint.toFixed(2)} m</strong>
+                <p>
+                  For a simplified myopic-eye model, far-point distance is
+                  approximately the reciprocal of the magnitude of the
+                  refractive error. This is not a prescription measurement.
+                </p>
+              </div>
+            </div>
+
+            <div className="sim-display">
+  <div className="display-header">
+    <span>02 / OPTICAL RESPONSE</span>
+    <span>SCHEMATIC · NOT TO SCALE</span>
+  </div>
+
+  <div className="diagram-output-grid">
+    <div className="diagram-column">
+      <div className="diagram-heading">RAY DIAGRAM</div>
+
+      <LensVisual
+        mode={mode}
+        prescription={prescription}
+        voltage={voltage}
+      />
+
+            <div className="formula-card">
+              <span className="muted-label">LENS POWER</span>
+              <code>P = 1 / f</code>
+              <p>Power in diopters; focal length in meters.</p>
+            </div>
+            </div>
+              <VisionOutput
+                mode={mode}
+                prescription={prescription}
+                voltage={voltage}
+              />
             </div>
           </div>
-          <div className="demo-visual">
-            <div className="preview-label"><span>Light response</span></div>
-            <LensVisual mode={mode} />
+          </div>
+          <p className="safety-note">
+            This diagram is a learning aid. It does not calculate an actual
+            eye's retinal focus or determine a suitable prescription.
+          </p>
+
+          <article className="refraction-lab glass-panel" aria-labelledby="refraction-title">
+            <div className="refraction-intro">
+              <span className="eyebrow"><span /> MATERIAL MODEL</span>
+              <h3 id="refraction-title">Refraction under different conditions</h3>
+              <p>Explore a separate optical rendering by changing the refractive index and target distance. These controls are independent of the illustrative prescription model above.</p>
+            </div>
+            <div className="refraction-controls">
+              <div className="refraction-control">
+                <div className="control-heading">
+                  <label className="field-label" htmlFor="refraction-ior">Index of refraction</label>
+                  <output htmlFor="refraction-ior">{ior.toFixed(2)}</output>
+                </div>
+                <input id="refraction-ior" type="range" min="1" max={MAX_IOR} step="0.01" value={ior} onChange={(event) => setIor(Math.min(MAX_IOR, Math.max(1, Number(event.target.value))))} />
+                <div className="range-labels"><span>1.00</span><span>{MAX_IOR.toFixed(2)}</span></div>
+              </div>
+              <div className="refraction-control">
+                <div className="control-heading">
+                  <label className="field-label" htmlFor="refraction-distance">Target distance</label>
+                  <output htmlFor="refraction-distance">{distance.toFixed(2)}</output>
+                </div>
+                <input id="refraction-distance" type="range" min="0.02" max="3" step="0.01" value={distance} onChange={(event) => setDistance(Number(event.target.value))} />
+                <div className="range-labels"><span>Near</span><span>Far</span></div>
+              </div>
+              <label className="refraction-toggle">
+                <input type="checkbox" checked={retune} onChange={(event) => setRetune(event.target.checked)} />
+                <span>Retune hyperbolic profile using the selected index</span>
+              </label>
+            </div>
+            <div className="refraction-canvas-wrap">
+              <RefractionSim n={ior} d={distance} retune={retune} />
+            </div>
+            <p className="fine-print">Schematic rendering only. The result depends on the component’s simplified shader model and is not a validated optical design or prescription tool.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="section shell" id="technology">
+        <div className="section-heading">
+          <span className="eyebrow"><span /> HOW IT COULD WORK</span>
+          <h2>A lens that changes<br />without changing shape.</h2>
+          <p>
+            Conventional lenses use their physical geometry and refractive
+            index to bend light. Liquid-crystal systems can alter their
+            effective optical behavior when an electric field changes
+            molecular alignment.
+          </p>
+        </div>
+
+        <div className="technology-grid">
+          <article className="tech-card glass-panel">
+            <span className="card-number">01 / MATERIALS</span>
+            <div className="stack-visual" aria-label="Illustrative lens material layers">
+              <div className="stack-layer layer-one">Transparent substrate</div>
+              <div className="stack-layer layer-two">ITO electrode</div>
+              <div className="stack-layer layer-three">Alignment layer</div>
+              <div className="stack-layer layer-four">Liquid crystal</div>
+              <div className="stack-layer layer-five">Alignment layer</div>
+              <div className="stack-layer layer-two">ITO electrode</div>
+              <div className="stack-layer layer-one">Transparent substrate</div>
+            </div>
+            <p>
+              A possible stack includes transparent substrates, indium tin
+              oxide electrodes, alignment layers, and a liquid-crystal cell.
+              Practical designs need optical, electrical, and mechanical
+              engineering.
+            </p>
+          </article>
+
+          <article className="tech-card glass-panel">
+            <span className="card-number">02 / CONTROL SYSTEM</span>
+            <div className="control-flow">
+              <div><span>01</span><strong>Scroll wheel</strong><small>User input</small></div>
+              <Arrow />
+              <div><span>02</span><strong>Microcontroller</strong><small>Control logic</small></div>
+              <Arrow />
+              <div><span>03</span><strong>LC driver</strong><small>Electrical signal</small></div>
+              <Arrow />
+              <div><span>04</span><strong>LC lens</strong><small>Optical response</small></div>
+            </div>
+            <p>
+              A physical lock could prevent accidental changes. A real
+              implementation would also require calibration, safe drive
+              electronics, power management, and a way to verify optical
+              output.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section className="cost-section" id="cost">
+        <div className="shell">
+          <div className="section-heading centered">
+            <span className="eyebrow"><span /> ACCESS & ECONOMICS</span>
+            <h2>Make the long-term<br /><em>cost visible.</em></h2>
+            <p>
+              The following is a comparison of your proposed product
+              estimates with the conventional glasses price range. Actual
+              savings depend on product cost, durability, repairs, and
+              whether a user's prescription changes.
+            </p>
           </div>
 
           <div className="cost-grid">
@@ -376,7 +652,7 @@ function App() {
             Liquid-crystal lenses are not a substitute for an eye exam or
             a clinically prescribed corrective lens.
           </p>
-        </article>
+        </div>
       </section>
 
       <footer className="footer shell">
